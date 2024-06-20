@@ -13,7 +13,6 @@ def index():
         query = request.args.get('query')
         if query.startswith('http'):
             parsed_url = urlparse(query)
-            print(parsed_url)
             row = {
                 'scheme': parsed_url.scheme,
                 'host': parsed_url.netloc,
@@ -23,23 +22,40 @@ def index():
                 'fragment': parsed_url.fragment,
                 'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
+            table_name = 'urls'
+        elif query != '':
+            print(query)
+            row = {
+                'string': query,
+                'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            table_name = 'strings'
         else:
             row = None
+            
         if row is not None:
             con = sqlite3.connect('database.sqlite')
-            
-            con.execute('''
-                insert into urls (scheme, host, path, params, query, fragment, time) values (?,?,?,?,?,?,?)
-                ''', 
-                (   row['scheme'], 
-                    row['host'], 
-                    row['path'], 
-                    row['params'], 
-                    row['query'],
-                    row['fragment'], 
-                    row['time']
+            if table_name == 'urls':
+                con.execute(f'''
+                    insert into {table_name} (scheme, host, path, params, query, fragment, time) values (?,?,?,?,?,?,?)
+                    ''', 
+                    (   row['scheme'], 
+                        row['host'], 
+                        row['path'], 
+                        row['params'], 
+                        row['query'],
+                        row['fragment'], 
+                        row['time']
+                    )
                 )
-            )
+            elif table_name == 'strings':
+                con.execute(f'''
+                    insert into {table_name} (string, time) values (?,?)
+                    ''', 
+                    (   row['string'],
+                        row['time']
+                    )
+                )
             con.commit()
             con.close()
         return json.dumps(row)
@@ -49,23 +65,41 @@ def index():
 def get_logs():
     con = sqlite3.connect('database.sqlite')
     cur = con.cursor()
-        
-    res = cur.execute('select * from urls order by time desc limit 5')
-    rows = res.fetchall()
-    res.close()
-    con.close()
+    
+    _type = request.args.get('type')
     logs = []
-    for row in rows:
-        logs.append({
-            'scheme': row[1],
-            'host': row[2],
-            'path': row[3],
-            'params': row[4],
-            'query': row[5],
-            'fragment': row[6],
-            'time': row[7]
-        })
-
+    
+    if _type == 'urls':
+        res = cur.execute('select * from urls order by time desc limit 5')
+        rows = res.fetchall()
+        res.close()
+        con.close()
+        for row in rows:
+            logs.append({
+                'scheme': row[1],
+                'host': row[2],
+                'path': row[3],
+                'params': row[4],
+                'query': row[5],
+                'fragment': row[6],
+                'time': row[7]
+            })
+        count = len(rows)
+    elif _type == 'string':
+        res = cur.execute('select * from strings order by time desc limit 5')
+        rows = res.fetchall()
+        res.close()
+        con.close()
+        for row in rows:
+            logs.append({
+                'string': row[1],
+                'time': row[2]
+            })
+        count = len(rows)
+        
+    if count >= 50:
+        init_db.reset_db()
+        
     return json.dumps(logs, indent=4)
 
 if __name__ == '__main__':

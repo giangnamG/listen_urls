@@ -17,3 +17,18 @@ def run():
             time text
         );            
     ''')
+    con.execute('''
+        create table if not exists strings (
+            id integer primary key autoincrement,
+            string text,
+            time text
+        );            
+    ''')
+    con.close()
+
+def reset_db():
+    con = sqlite3.connect('database.sqlite')
+    con.execute('delete from urls')
+    con.execute('delete from strings')
+    con.commit()
+    con.close()

@@ -12,4 +12,4 @@ EXPOSE 5000
 CMD ["python", "app.py"]
 
 # docker build -t listen_query .
-# docker run --name=listen_query -d -p 5001:5000 listen_query
+# docker run --name=listen_query -d -p 5000:5000 listen_query
