@@ -24,6 +24,14 @@ def run():
             time text
         );            
     ''')
+    con.execute('''
+        create table if not exists payloads (
+            id integer primary key autoincrement,
+            code_identifier integer not null,
+            payload text not null,
+            time text
+        )
+    ''')
     con.close()
 
 def reset_db():

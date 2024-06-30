@@ -3,7 +3,7 @@ import sqlite3, json
 import init_db
 from urllib.parse import urlparse
 from datetime import datetime
-
+import random
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
@@ -102,6 +102,39 @@ def get_logs():
         
     return json.dumps(logs, indent=4)
 
+@app.route('/create_payload', methods=['GET','POST'])
+def create_payload():
+    if request.method == 'GET':
+        return '''
+        <div>Create payload</div>
+        <form method="POST">
+            <label for="payload">Payload:</label><br>
+            <textarea name="payload" rows=20 cols=100></textarea>
+            <br>
+            <button type="submit" name="store">Store</button>
+        </form>
+    '''
+    elif request.method == 'POST':
+        payload = request.form.get('payload')
+        code_identifier = random.randint(100000,999999)
+        con = sqlite3.connect('database.sqlite')
+        cur = con.cursor()
+        cur.execute('insert into payloads (code_identifier, payload, time) values (?,?,?)', (code_identifier,payload, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        con.commit()
+        con.close()
+        return f'''
+            Payload stored successfully <a href="/payloads/{code_identifier}">View payload</a>'''
+@app.route('/payloads/<code_identifier>', methods=['GET'])
+def payloads(code_identifier):
+    try:
+        con = sqlite3.connect('database.sqlite')
+        cur = con.cursor()
+        res = cur.execute(f'select * from payloads where code_identifier = {code_identifier} limit 1')
+        rows = cur.fetchall()
+        return rows[0][2]
+    except Exception as e:
+        return f'Error: {str(e)}'
+    
 if __name__ == '__main__':
     init_db.run()
     app.run(host='0.0.0.0', port=5000, debug=True)
