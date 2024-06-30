@@ -38,5 +38,6 @@ def reset_db():
     con = sqlite3.connect('database.sqlite')
     con.execute('delete from urls')
     con.execute('delete from strings')
+    con.execute('delete from payloads')
     con.commit()
     con.close()
