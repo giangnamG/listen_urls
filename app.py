@@ -3,7 +3,7 @@ import sqlite3, json
 import init_db
 from urllib.parse import urlparse
 from datetime import datetime
-import random
+import random, base64, html
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
@@ -119,7 +119,7 @@ def create_payload():
         code_identifier = random.randint(100000,999999)
         con = sqlite3.connect('database.sqlite')
         cur = con.cursor()
-        cur.execute('insert into payloads (code_identifier, payload, time) values (?,?,?)', (code_identifier,payload, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        cur.execute('insert into payloads (code_identifier, payload, time) values (?,?,?)', (code_identifier, base64.b64encode(payload.encode()).decode(), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         con.commit()
         con.close()
         return f'''
@@ -131,7 +131,9 @@ def payloads(code_identifier):
         cur = con.cursor()
         res = cur.execute(f'select * from payloads where code_identifier = {code_identifier} limit 1')
         rows = cur.fetchall()
-        return rows[0][2]
+        payload = base64.b64decode(rows[0][2]).decode()
+        print(payload)
+        return html.escape(payload) 
     except Exception as e:
         return f'Error: {str(e)}'
     
