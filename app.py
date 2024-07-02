@@ -181,10 +181,9 @@ def file_contents(filename):
     filepath = os.path.join(UPLOAD_DIRECTORY, filename)
     try:
         contents = open(filepath, 'r').read()
-        print(contents)
         return {
             'filename': filename,
-            'contents': contents
+            'contents': contents,
         }
     except:
         return send_from_directory(UPLOAD_DIRECTORY, filename)
