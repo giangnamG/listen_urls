@@ -1,9 +1,9 @@
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 import sqlite3, json
 import init_db
 from urllib.parse import urlparse
 from datetime import datetime
-import random, base64, html
+import random, base64, html, os
 app = Flask(__name__)
 
 @app.route('/', methods=['GET'])
@@ -136,7 +136,42 @@ def payloads(code_identifier):
         return html.escape(payload) 
     except Exception as e:
         return f'Error: {str(e)}'
-    
+
+@app.route('/upload', methods=['GET','POST'])
+def upload():
+    UPLOAD_DIRECTORY = './uploads'
+    if request.method == 'POST':
+        file = request.files['file']
+        filename = file.filename
+        ext = '.'.join(filename.split('.')[1:])
+        filepath = os.path.join(UPLOAD_DIRECTORY, filename+'_'+str(random.randint(100000,999999))+'.'+ext)
+        print(filepath)
+        file.save(filepath)
+        return f"File '{filename}' uploaded successfully. <a href='{filepath}'>View file</a>"
+    else:
+        return '''
+        <div>Upload a file</div>
+        <form method="POST" enctype="multipart/form-data">
+            <input type="file" name="file">
+            <button type="submit" name="upload">Upload</button>
+        </form>
+        '''
+@app.route('/uploads/', methods=['GET'])
+def uploads():
+    files = os.listdir('./uploads')
+    if len(files) > 50:
+        os.system('rm -rf /uploads/*')
+        return 'cleaned! empty folder uploaded'
+    views = '<br>'.join(f'<a href="/uploads/{file}">{file}</a>' for file in files)
+    return views
+@app.route('/uploads/<filename>', methods=['GET'])
+def view_file(filename):
+    UPLOAD_DIRECTORY = './uploads'
+    filepath = os.path.join(UPLOAD_DIRECTORY, filename)
+    if os.path.isfile(filepath):
+        return send_from_directory(UPLOAD_DIRECTORY, filename)
+    else:
+        return "File not found."
 if __name__ == '__main__':
     init_db.run()
     app.run(host='0.0.0.0', port=5000, debug=True)
