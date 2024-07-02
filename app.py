@@ -144,10 +144,13 @@ def upload():
         file = request.files['file']
         filename = file.filename
         ext = '.'.join(filename.split('.')[1:])
-        filepath = os.path.join(UPLOAD_DIRECTORY, filename+'_'+str(random.randint(100000,999999))+'.'+ext)
-        print(filepath)
+        name = filename.split('.')[0]+'_'+str(random.randint(100000,999999))+'.'+ext
+        filepath = os.path.join(UPLOAD_DIRECTORY, name)
         file.save(filepath)
-        return f"File '{filename}' uploaded successfully. <a href='{filepath}'>View file</a>"
+        return f"""File '{filename}' uploaded successfully.<br>
+                <a href='{filepath}'>View file {filepath}</a><br>
+                <a href="/file_contents/{name}">view contents</a>
+                """
     else:
         return '''
         <div>Upload a file</div>
@@ -162,7 +165,7 @@ def uploads():
     if len(files) > 50:
         os.system('rm -rf /uploads/*')
         return 'cleaned! empty folder uploaded'
-    views = '<br>'.join(f'<a href="/uploads/{file}">{file}</a>' for file in files)
+    views = '<br>'.join(f'<a href="/uploads/{file}">{file}</a> <a href="/file_contents/{file}">contents</a>' for file in files)
     return views
 @app.route('/uploads/<filename>', methods=['GET'])
 def view_file(filename):
@@ -172,6 +175,20 @@ def view_file(filename):
         return send_from_directory(UPLOAD_DIRECTORY, filename)
     else:
         return "File not found."
+@app.route('/file_contents/<filename>', methods=['GET'])
+def file_contents(filename):
+    UPLOAD_DIRECTORY = './uploads'
+    filepath = os.path.join(UPLOAD_DIRECTORY, filename)
+    try:
+        contents = open(filepath, 'r').read()
+        print(contents)
+        return {
+            'filename': filename,
+            'contents': contents
+        }
+    except:
+        return send_from_directory(UPLOAD_DIRECTORY, filename)
+    
 if __name__ == '__main__':
     init_db.run()
     app.run(host='0.0.0.0', port=5000, debug=True)
